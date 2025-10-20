@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>총 매수 계산기</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{--bg:#f6f7fb;--card:#fff;--border:#dcdcdc;--accent:#111}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,"Apple SD Gothic Neo",sans-serif;line-height:1.5}
+    header{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--border);padding:12px 16px}
+    header h1{font-size:18px;margin:0}
+    .wrap{max-width:760px;margin:0 auto;padding:16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
+    .grid{display:grid;grid-template-columns: 1fr 1fr;gap:12px}
+    label{font-size:14px;color:#333}
+    input[type=number]{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px}
+    .full{grid-column:1/-1}
+    .btn{padding:12px 16px;border:1px solid var(--border);border-radius:10px;background:var(--accent);color:#fff;cursor:pointer}
+    .btn.secondary{background:#fff;color:#111}
+    .result{font-size:22px;font-weight:700;margin:8px 0}
+    .muted{color:#666;font-size:12px}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .formula{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;background:#f1f3f5;border:1px solid #dee2e6;border-radius:8px;padding:8px;overflow:auto}
+    .warn{color:#c0392b;font-size:13px;display:none}
+  </style>
+</head>
+<body>
+  <header><h1>총 매수 계산기</h1></header>
+  <div class="wrap">
+    <div class="card">
+      <div class="grid">
+        <div>
+          <label for="roll">롤무게</label>
+          <input id="roll" type="number" inputmode="decimal" placeholder="예: 12500">
+        </div>
+        <div>
+          <label for="core">지관무게</label>
+          <input id="core" type="number" inputmode="decimal" placeholder="예: 480">
+        </div>
+        <div>
+          <label for="sampleW">샘플무게</label>
+          <input id="sampleW" type="number" inputmode="decimal" placeholder="예: 0.52">
+        </div>
+        <div>
+          <label for="sampleN">샘플매수</label>
+          <input id="sampleN" type="number" inputmode="decimal" placeholder="예: 100">
+        </div>
+        <div class="full row">
+          <button class="btn" onclick="calc()">계산</button>
+          <button class="btn secondary" onclick="resetForm()">초기화</button>
+          <span class="muted">※ 모든 값은 동일한 단위(예: g)로 입력해줘.</span>
+        </div>
+      </div>
+
+      <p id="warn" class="warn">샘플무게는 0보다 커야 하고, (롤무게 - 지관무게)도 0보다 커야 해.</p>
+
+      <h3>결과</h3>
+      <div class="result" id="res">-</div>
+      <div class="muted" id="resDetail"></div>
+
+      <h3>사용한 식</h3>
+      <div class="formula" id="formula"></div>
+    </div>
+  </div>
+
+  <script>
+    function fmt(n, d=4){
+      if(!Number.isFinite(n)) return '-';
+      return n.toLocaleString(undefined, {minimumFractionDigits:d, maximumFractionDigits:d});
+    }
+    function fmt0(n){
+      if(!Number.isFinite(n)) return '-';
+      return n.toLocaleString(undefined, {maximumFractionDigits:0});
+    }
+    function calc(){
+      const roll = Number(document.getElementById('roll').value);
+      const core = Number(document.getElementById('core').value);
+      const sampleW = Number(document.getElementById('sampleW').value);
+      const sampleN = Number(document.getElementById('sampleN').value);
+
+      const warn = document.getElementById('warn');
+      warn.style.display = 'none';
+
+      if(!(sampleW>0) || !Number.isFinite(sampleW)){
+        warn.textContent = '샘플무게는 0보다 커야 해.';
+        warn.style.display = 'block';
+        render('-', '', '');
+        return;
+      }
+      const net = roll - core;
+      if(!(net>0) || !Number.isFinite(net)){
+        warn.textContent = '(롤무게 - 지관무게)가 0보다 커야 해.';
+        warn.style.display = 'block';
+        render('-', '', '');
+        return;
+      }
+
+      const totalSheets = net / sampleW * sampleN;
+
+      const detail = `정수 내림: ${fmt0(Math.floor(totalSheets))}  ·  반올림: ${fmt0(Math.round(totalSheets))}  ·  올림: ${fmt0(Math.ceil(totalSheets))}`;
+      const formulaTxt = `(롤무게 - 지관무게) / 샘플무게 * 샘플매수
+= (${fmt(roll,4)} - ${fmt(core,4)}) / ${fmt(sampleW,4)} * ${fmt(sampleN,4)}
+= ${fmt(totalSheets,4)}`;
+
+      render(fmt(totalSheets,4) + ' (소수 4자리)', detail, formulaTxt);
+    }
+    function render(main, detail, formulaTxt){
+      document.getElementById('res').textContent = main || '-';
+      document.getElementById('resDetail').textContent = detail || '';
+      document.getElementById('formula').textContent = formulaTxt || '';
+    }
+    function resetForm(){
+      ['roll','core','sampleW','sampleN'].forEach(id=>document.getElementById(id).value='');
+      render('-', '', '');
+      document.getElementById('warn').style.display = 'none';
+    }
+    // Enter key triggers calc
+    document.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter') calc();
+    });
+  </script>
+</body>
+</html>
